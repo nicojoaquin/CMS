@@ -1,32 +1,18 @@
-import { useForm, FormProvider } from "react-hook-form";
+import { FormProvider } from "react-hook-form";
 import { useRouter } from "next/router";
-import { useState } from "react";
 import Input from "@/components/input";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema } from "./lib/schemas";
 import { RegisterFormValues } from "./lib/types";
-import { authClient } from "@/lib/auth/client";
+import { useAuthentication } from "./lib/hooks/useAuthentication";
+import FormErrorMessage from "@/components/form-error-message";
 
 export default function RegisterPage() {
-  const methods = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-  });
-
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { methods, error, signUp } = useAuthentication(registerSchema);
 
   const onSubmit = async (data: RegisterFormValues) => {
-    setError(null);
-    const { error } = await authClient.signUp.email({
-      email: data.email,
-      password: data.password,
-      name: "Nico",
-    });
-    if (error) {
-      setError(error.message!);
-      return;
-    }
-    router.push("/app");
+    const result = await signUp(data);
+    if (result.success) router.push("/app");
   };
 
   return (
@@ -42,7 +28,7 @@ export default function RegisterPage() {
             label="Enter your password again"
             type="password"
           />
-          {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+          {error && <FormErrorMessage message={error} />}
           <button
             type="submit"
             className="bg-blue-600 text-white px-4 py-2 rounded"
