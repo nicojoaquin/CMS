@@ -12,7 +12,7 @@ export default function RegisterPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     const result = await signIn(data);
-    if (result.success) router.push("/app");
+    if (result.success) router.push("/dashboard");
   };
 
   return (

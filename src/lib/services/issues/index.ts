@@ -1,5 +1,5 @@
 import { AxiosRequestConfig } from "axios";
-import { apiClient } from "../axios";
+import { apiClient } from "../../services/axios";
 import { ResolveIssueRequest, ResolveIssueResponse } from "./types";
 
 const ENDPOINT = "/issue";

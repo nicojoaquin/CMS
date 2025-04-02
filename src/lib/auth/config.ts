@@ -1,13 +1,15 @@
-import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { betterAuth } from "better-auth";
-import { db } from "../db/config";
+import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { getDb } from "../db/utils";
 
 export const auth = betterAuth({
+  database: mongodbAdapter(await getDb("blog-cms")),
   secret: process.env.BETTER_AUTH_SECRET!,
-  database: mongodbAdapter(db),
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 6,
     requireEmailVerification: false,
   },
 });
+
+export const getServerSession = auth.api.getSession;
