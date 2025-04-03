@@ -24,6 +24,17 @@ export default async function handler(
 
   if (req.method === "GET") {
     try {
+      // Parse pagination parameters
+      const page = Number(req.query.page) || 1;
+      const limit = Number(req.query.limit) || 10;
+      const skip = (page - 1) * limit;
+
+      // Get the total count of articles for this user
+      const totalCount = await db
+        .collection<ArticleDocument>("article")
+        .countDocuments({ author: new ObjectId(session.user.id) });
+
+      // Get paginated articles
       const articles = await db
         .collection<ArticleDocument>("article")
         .aggregate<PopulatedArticleDocument>([
@@ -44,6 +55,12 @@ export default async function handler(
           {
             $sort: { createdAt: -1 },
           },
+          {
+            $skip: skip,
+          },
+          {
+            $limit: limit,
+          },
         ])
         .toArray();
 
@@ -51,7 +68,15 @@ export default async function handler(
         serializePopulatedArticle(article)
       );
 
-      return res.status(200).json(formattedArticles);
+      return res.status(200).json({
+        articles: formattedArticles,
+        metadata: {
+          total: totalCount,
+          page,
+          limit,
+          totalPages: Math.ceil(totalCount / limit),
+        },
+      });
     } catch (error) {
       console.error("Error fetching articles:", error);
       return res.status(500).json({ message: "Internal server error" });

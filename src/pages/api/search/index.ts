@@ -58,9 +58,19 @@ export default async function handler(
       ])
       .toArray();
 
-    const results = articles.map((article) =>
-      serializePopulatedArticle(article)
-    );
+    // Serialize articles and add isOwner flag
+    const results = articles.map((article) => {
+      const serialized = serializePopulatedArticle(article);
+
+      // Add the isOwner property based on comparing user IDs
+      const isOwner =
+        article._id && session.user.id === article.authorData._id.toString();
+
+      return {
+        ...serialized,
+        isOwner,
+      };
+    });
 
     return res.status(200).json(results);
   } catch (error) {

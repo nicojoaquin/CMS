@@ -3,7 +3,11 @@ type Props = {
 };
 
 const FormErrorMessage = ({ message }: Props) => {
-  return <p className="text-red-500 text-sm mb-2">{message}</p>;
+  return (
+    <div className="bg-[#FFEBEE] text-[#B71C1C] p-3 rounded-md mb-4 font-medium text-sm">
+      {message}
+    </div>
+  );
 };
 
 export default FormErrorMessage;

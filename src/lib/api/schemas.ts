@@ -5,10 +5,7 @@ export const createArticleSchema = z.object({
   content: z
     .string()
     .min(10, { message: "Content must be at least 10 characters" }),
-  coverImage: z
-    .string()
-    .url({ message: "Please enter a valid URL" })
-    .optional(),
+  coverImage: z.string().min(1, { message: "Cover image is required" }),
 });
 
 export const updateArticleSchema = z.object({
@@ -22,6 +19,6 @@ export const updateArticleSchema = z.object({
     .optional(),
   coverImage: z
     .string()
-    .url({ message: "Please enter a valid URL" })
+    .min(1, { message: "Cover image is required" })
     .optional(),
 });
