@@ -14,7 +14,7 @@ import Pagination from "./components/pagination";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { getUserArticles } from "@/lib/services/articles";
 
-const PAGE_LIMIT = 3;
+const PAGE_LIMIT = 10;
 
 export default function DashboardPage() {
   const { currentPage } = usePage();

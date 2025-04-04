@@ -174,7 +174,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         dehydratedState: dehydrate(queryClient),
       },
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       redirect: {
         destination: "/dashboard",
