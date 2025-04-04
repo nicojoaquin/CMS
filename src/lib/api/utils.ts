@@ -9,7 +9,7 @@ export function serializePopulatedArticle(
     id: article._id.toString(),
     title: article.title,
     content: article.content,
-    coverImage: article.coverImage,
+    coverImage: article.coverImage!,
     author: {
       id: article.authorData._id.toString(),
       name: article.authorData.name,
