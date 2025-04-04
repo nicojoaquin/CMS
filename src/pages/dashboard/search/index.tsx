@@ -10,9 +10,9 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { GetServerSideProps } from "next";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
-import ArticlesList from "../components/articles-list";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { searchArticles } from "@/lib/services/articles";
+import ArticlesList from "@/components/articles/articles-list";
 
 interface SearchResult extends Article {
   isOwner: boolean;
