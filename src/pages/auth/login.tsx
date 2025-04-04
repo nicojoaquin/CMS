@@ -9,14 +9,19 @@ import { useAuthentication } from "./lib/hooks/useAuthentication";
 import { GetServerSideProps } from "next";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function LoginPage() {
   const router = useRouter();
   const { methods, error, signIn } = useAuthentication(loginSchema);
+  const queryClient = useQueryClient();
 
   const onSubmit = async (data: LoginFormValues) => {
     const result = await signIn(data);
-    if (result.success) router.push("/dashboard");
+    if (result.success) {
+      queryClient.clear();
+      router.push("/dashboard");
+    }
   };
 
   return (

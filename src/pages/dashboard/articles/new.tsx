@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import Link from "next/link";
-import { useCreateArticle, articleKeys } from "@/lib/services/articles/queries";
+import { useCreateArticle } from "@/lib/services/articles/queries";
 import Header from "@/components/Header";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { GetServerSideProps } from "next";
@@ -19,7 +19,6 @@ import ImageUpload from "@/components/ImageUpload";
 import { useImageUpload } from "@/lib/hooks/use-image-upload";
 import { uploadFile } from "@/lib/services/upload";
 import { useEffect, useState } from "react";
-import { queryClient } from "@/lib/query/client";
 
 // Define the type based on the schema
 type ArticleFormValues = z.infer<typeof createArticleSchema>;
@@ -162,19 +161,6 @@ export default function NewArticlePage() {
 
       // Create the article
       await createArticleMutation.mutateAsync(requestData);
-
-      // Force invalidate all queries
-      queryClient.invalidateQueries({
-        queryKey: articleKeys.all,
-        refetchType: "all",
-      });
-
-      // Force refetch the article list to ensure it's up to date
-      await queryClient.refetchQueries({
-        queryKey: articleKeys.lists(),
-        type: "all",
-      });
-
       // Wait for any cache updates to complete
       await new Promise((resolve) => setTimeout(resolve, 300));
 

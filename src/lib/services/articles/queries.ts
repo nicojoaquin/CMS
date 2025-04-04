@@ -36,35 +36,17 @@ interface DeleteArticleContext {
   articleToDelete?: Article;
 }
 
-// Type-safe query keys for better cache management
-export const articleKeys = {
-  all: ["articles"] as const,
-  lists: () => [...articleKeys.all, "list"] as const,
-  list: (filters: Record<string, unknown>) =>
-    [...articleKeys.lists(), filters] as const,
-  details: () => [...articleKeys.all, "detail"] as const,
-  detail: (id: string) => [...articleKeys.details(), id] as const,
-  search: (query: string) => [...articleKeys.all, "search", query] as const,
-};
-
 /**
  * Hook for fetching articles with pagination, with strongly typed options
  */
 export function useUserArticles(
-  options: { page?: number; limit?: number } = {},
-  queryOptions?: Omit<
-    UseQueryOptions<GetArticlesResponse, Error, GetArticlesResponse, QueryKey>,
-    "queryKey" | "queryFn"
-  >
+  options: { page?: number; limit?: number } = {}
 ) {
   const { page = 1, limit = 10 } = options;
 
   return useQuery({
-    queryKey: articleKeys.list({ page, limit }),
+    queryKey: ["articles", page],
     queryFn: () => getUserArticles({ page, limit }),
-    // Memoize the page calculation to avoid unnecessary rerenders
-    select: (data) => data,
-    ...queryOptions,
   });
 }
 
@@ -79,7 +61,7 @@ export function useArticleById(
   >
 ) {
   return useQuery({
-    queryKey: articleKeys.detail(id || ""),
+    queryKey: ["article", id],
     queryFn: () => getArticleById(id as string),
     enabled: !!id, // Only run the query if we have an ID
     ...queryOptions,
@@ -97,7 +79,7 @@ export function useSearchArticles(
   >
 ) {
   return useQuery<SearchResultItem[]>({
-    queryKey: articleKeys.search(query || ""),
+    queryKey: ["search", query],
     queryFn: async () => {
       // Return empty array if query is empty
       if (!query || query.trim() === "") {
@@ -135,12 +117,12 @@ export function useCreateArticle(
     onSuccess: (data, variables, context) => {
       // First invalidate all article queries to ensure consistency
       queryClient.invalidateQueries({
-        queryKey: articleKeys.all,
+        queryKey: ["articles"],
         refetchType: "all", // Force refetch all queries
       });
 
       // Now specifically update the article list for immediate feedback
-      queryClient.setQueriesData({ queryKey: articleKeys.lists() }, (old) => {
+      queryClient.setQueriesData({ queryKey: ["articles"] }, (old) => {
         if (!old || typeof old !== "object" || !("articles" in old)) return old;
 
         const typedOld = old as GetArticlesResponse;
@@ -165,10 +147,10 @@ export function useCreateArticle(
       });
 
       // Set the individual article data in the cache
-      queryClient.setQueryData(articleKeys.detail(data.id), data);
+      queryClient.setQueryData(["article", data.id], data);
 
       // Immediately refetch the article list to ensure it's up to date
-      queryClient.refetchQueries({ queryKey: articleKeys.lists() });
+      queryClient.refetchQueries({ queryKey: ["articles"] });
 
       // If the mutation provides onSuccess handler, call it
       if (mutationOptions?.onSuccess) {
@@ -205,12 +187,13 @@ export function useUpdateArticle(
 
     onMutate: async (newArticleData) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: articleKeys.detail(id) });
+      await queryClient.cancelQueries({ queryKey: ["article", id] });
 
       // Snapshot the previous value
-      const previousArticle = queryClient.getQueryData<Article>(
-        articleKeys.detail(id)
-      );
+      const previousArticle = queryClient.getQueryData<Article>([
+        "article",
+        id,
+      ]);
 
       // Optimistically update to the new value
       if (previousArticle) {
@@ -221,13 +204,10 @@ export function useUpdateArticle(
           updatedAt: new Date().toISOString(),
         };
 
-        queryClient.setQueryData<Article>(
-          articleKeys.detail(id),
-          optimisticArticle
-        );
+        queryClient.setQueryData<Article>(["article", id], optimisticArticle);
 
         // Also update in article lists to ensure UI consistency
-        queryClient.setQueriesData({ queryKey: articleKeys.lists() }, (old) => {
+        queryClient.setQueriesData({ queryKey: ["articles"] }, (old) => {
           if (!old || typeof old !== "object" || !("articles" in old))
             return old;
 
@@ -256,15 +236,15 @@ export function useUpdateArticle(
 
       // First invalidate all article queries to ensure consistency
       queryClient.invalidateQueries({
-        queryKey: articleKeys.all,
+        queryKey: ["articles"],
         refetchType: "all", // Force refetch all queries
       });
 
       // Set the updated article in the cache with specific focus on the coverImage
-      queryClient.setQueryData(articleKeys.detail(id), data);
+      queryClient.setQueryData(["article", id], data);
 
       // Update the article in any lists it appears in with emphasis on image updates
-      queryClient.setQueriesData({ queryKey: articleKeys.lists() }, (old) => {
+      queryClient.setQueriesData({ queryKey: ["articles"] }, (old) => {
         if (!old || typeof old !== "object" || !("articles" in old)) return old;
 
         const typedOld = old as GetArticlesResponse;
@@ -286,13 +266,13 @@ export function useUpdateArticle(
 
       // Immediately refetch the article detail to ensure it's up to date
       queryClient.refetchQueries({
-        queryKey: articleKeys.detail(id),
+        queryKey: ["articles", id],
         type: "all",
       });
 
       // Also refetch the article list to ensure it's up to date
       queryClient.refetchQueries({
-        queryKey: articleKeys.lists(),
+        queryKey: ["articles"],
         type: "all",
       });
 
@@ -308,13 +288,10 @@ export function useUpdateArticle(
       // Rollback to the previous value if there's an error
       if (context?.previousArticle) {
         // Restore the article detail
-        queryClient.setQueryData(
-          articleKeys.detail(id),
-          context.previousArticle
-        );
+        queryClient.setQueryData(["articles", id], context.previousArticle);
 
         // Also restore in article lists
-        queryClient.setQueriesData({ queryKey: articleKeys.lists() }, (old) => {
+        queryClient.setQueriesData({ queryKey: ["articles"] }, (old) => {
           if (!old || typeof old !== "object" || !("articles" in old))
             return old;
 
@@ -355,18 +332,19 @@ export function useDeleteArticle(
 
     onMutate: async (id) => {
       // Cancel any outgoing refetches to prevent them from overwriting our optimistic update
-      await queryClient.cancelQueries({ queryKey: articleKeys.all });
+      await queryClient.cancelQueries({ queryKey: ["articles"] });
 
       // Get the current articles list from the cache
-      const previousArticles = queryClient.getQueryData(articleKeys.lists());
+      const previousArticles = queryClient.getQueryData(["articles"]);
 
       // Get the article being deleted for potential rollback
-      const articleToDelete = queryClient.getQueryData<Article>(
-        articleKeys.detail(id)
-      );
+      const articleToDelete = queryClient.getQueryData<Article>([
+        "articles",
+        id,
+      ]);
 
       // Remove the article from all list queries in the cache
-      queryClient.setQueriesData({ queryKey: articleKeys.lists() }, (old) => {
+      queryClient.setQueriesData({ queryKey: ["articles"] }, (old) => {
         if (!old || typeof old !== "object" || !("articles" in old)) return old;
 
         const typedOld = old as GetArticlesResponse;
@@ -386,7 +364,7 @@ export function useDeleteArticle(
       });
 
       // Remove the article from the cache
-      queryClient.removeQueries({ queryKey: articleKeys.detail(id) });
+      queryClient.removeQueries({ queryKey: ["articles", id] });
 
       return { previousArticles, articleToDelete };
     },
@@ -394,13 +372,13 @@ export function useDeleteArticle(
     onSuccess: (_, id, context) => {
       // Invalidate all article queries to ensure consistency
       queryClient.invalidateQueries({
-        queryKey: articleKeys.all,
+        queryKey: ["articles"],
         refetchType: "all",
       });
 
       // Force immediate refetch to update pagination info
       queryClient.refetchQueries({
-        queryKey: articleKeys.lists(),
+        queryKey: ["articles"],
         type: "all",
       });
 
@@ -416,16 +394,13 @@ export function useDeleteArticle(
       // Restore any affected queries from the context
       if (context?.previousArticles) {
         queryClient.setQueriesData(
-          { queryKey: articleKeys.lists() },
+          { queryKey: ["articles"] },
           context.previousArticles
         );
       }
 
       if (context?.articleToDelete) {
-        queryClient.setQueryData(
-          articleKeys.detail(id),
-          context.articleToDelete
-        );
+        queryClient.setQueryData(["articles", id], context.articleToDelete);
       }
 
       // If the mutation provides onError handler, call it

@@ -2,7 +2,6 @@ import React, { useState, FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { authClient } from "@/lib/auth/client";
-import { queryClient } from "@/lib/query/client";
 
 export default function Header() {
   const router = useRouter();
@@ -18,9 +17,6 @@ export default function Header() {
   };
 
   const handleLogout = async () => {
-    // Clear the query cache to prevent data leakage between sessions
-    queryClient.clear();
-
     // Sign out using the auth client
     await authClient.signOut();
 

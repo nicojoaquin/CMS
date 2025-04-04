@@ -3,7 +3,6 @@ import Link from "next/link";
 import {
   useArticleById,
   useUpdateArticle,
-  articleKeys,
 } from "@/lib/services/articles/queries";
 import Header from "@/components/Header";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -24,7 +23,6 @@ import ImageUpload from "@/components/ImageUpload";
 import { useImageUpload } from "@/lib/hooks/use-image-upload";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/services/upload";
-import { queryClient } from "@/lib/query/client";
 
 // Define the form values type using the schema
 type ArticleFormValues = z.infer<typeof updateArticleSchema>;
@@ -276,22 +274,6 @@ export default function EditArticlePage() {
 
       // Update the article with a fresh mutation
       await updateArticleMutation.mutateAsync(updateData);
-
-      // Force cache update
-      queryClient.setQueryData(articleKeys.detail(id), {
-        ...article,
-        ...updateData,
-        updatedAt: new Date().toISOString(),
-      });
-
-      // Invalidate cache and refetch
-      queryClient.invalidateQueries({
-        queryKey: articleKeys.all,
-        refetchType: "all",
-      });
-      await queryClient.refetchQueries({
-        queryKey: articleKeys.detail(id),
-      });
 
       // Show success message
       showSuccessToast("Article updated successfully");

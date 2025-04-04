@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import {
   useUserArticles,
@@ -10,63 +10,43 @@ import { GetServerSideProps } from "next";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
 import { showErrorToast, showSuccessToast } from "@/lib/hooks/use-toast";
+import Image from "next/image";
+import { useRouter } from "next/router";
 
 export default function DashboardPage() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [isNavigating, setIsNavigating] = useState(false);
+  const router = useRouter();
+  const queryPage = router.query.page as string;
+  const currentPage =
+    queryPage && Number(queryPage) > 0 ? Number(queryPage) : 1;
 
-  // Use Tanstack Query for fetching articles with staleTime set to 0 to ensure refetching
+  const setCurrentPage = (page: number) => {
+    if (page < 1) return;
+    router.push(`/dashboard?page=${page}`);
+  };
+
   const {
     data: articlesData,
     isLoading,
     error,
-    refetch,
-    isFetching,
-  } = useUserArticles(
-    {
-      page: currentPage,
-      limit: 3,
-    },
-    {
-      staleTime: 0, // This ensures data is always considered stale and will be refetched
-      refetchOnMount: "always", // Always refetch when component mounts
-      refetchOnWindowFocus: true, // Refetch when window regains focus
-    }
-  );
+  } = useUserArticles({
+    page: currentPage,
+    limit: 3,
+  });
 
-  // Force refetch when component mounts or when page changes
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsNavigating(true);
-      await refetch();
-      setIsNavigating(false);
-    };
+  const articles = articlesData?.articles || [];
+  const totalPages = articlesData?.metadata.totalPages || 1;
 
-    fetchData();
-  }, [refetch, currentPage]);
-
-  // Initialize the delete mutation
   const deleteArticleMutation = useDeleteArticle({
     onSuccess: async () => {
       showSuccessToast("Article deleted successfully!");
-
-      // Refetch to get updated articles count
-      const updatedData = await refetch();
-
-      // Check if current page is now empty and it's not the first page
-      const updatedArticles = updatedData.data?.articles || [];
-
-      if (updatedArticles.length === 0 && currentPage > 1) {
-        // Navigate to the previous page if the current page is now empty
-        setCurrentPage((prev) => Math.max(1, prev - 1));
-      }
+      if (articles.length === 0 && currentPage > 1)
+        setCurrentPage(currentPage - 1);
     },
     onError: (error) => {
       showErrorToast(error);
     },
   });
 
-  // Handle article deletion
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this article?")) {
       deleteArticleMutation.mutate(id);
@@ -79,23 +59,8 @@ export default function DashboardPage() {
     }
   };
 
-  // Get articles from the data
-  const articles = articlesData?.articles || [];
-  const totalPages = articlesData?.metadata.totalPages || 1;
-
-  // Auto-correct current page if it exceeds total pages
-  useEffect(() => {
-    if (totalPages > 0 && currentPage > totalPages) {
-      setCurrentPage(totalPages);
-    }
-  }, [totalPages, currentPage]);
-
-  // Define breadcrumbs
   const breadcrumbItems = [{ label: "Dashboard" }];
-
-  // Combine loading states
-  const showLoading =
-    isLoading || isFetching || isNavigating || deleteArticleMutation.isPending;
+  const showLoading = isLoading || deleteArticleMutation.isPending;
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -167,7 +132,9 @@ export default function DashboardPage() {
                           <div className="flex">
                             {article.coverImage ? (
                               <div className="flex-shrink-0 mr-4">
-                                <img
+                                <Image
+                                  width={64}
+                                  height={64}
                                   src={article.coverImage}
                                   alt={article.title}
                                   className="h-16 w-16 object-cover rounded-md"
@@ -243,7 +210,7 @@ export default function DashboardPage() {
                             e.stopPropagation();
                             handleDelete(article.id);
                           }}
-                          className="bg-[#FFEBEE] hover:bg-[#FFCDD2] text-[#C62828] p-2 rounded-md transition-colors"
+                          className="bg-[#FFEBEE] hover:bg-[#FFCDD2] text-[#C62828] p-2 rounded-md transition-colors cursor-pointer "
                           title="Delete article"
                           disabled={deleteArticleMutation.isPending}
                         >
