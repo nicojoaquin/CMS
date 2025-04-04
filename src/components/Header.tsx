@@ -78,7 +78,7 @@ const Header = () => {
                 </span>
               )}
               <Link
-                href="/dashboard/articles/new"
+                href="/dashboard/new"
                 className="bg-[#5D4037] hover:bg-[#4E342E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer"
               >
                 Create Article

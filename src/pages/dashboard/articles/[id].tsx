@@ -13,7 +13,7 @@ import { authClient } from "@/lib/auth/client";
 import { getArticleById } from "@/lib/services/articles";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import GetArticleError from "./components/get-article-error";
+import GetArticleError from "../../../components/articles/get-article-error";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
 

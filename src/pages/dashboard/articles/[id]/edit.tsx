@@ -26,7 +26,7 @@ import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/services/upload";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { getArticleById } from "@/lib/services/articles";
-import GetArticleError from "../components/get-article-error";
+import GetArticleError from "../../../../components/articles/get-article-error";
 
 type ArticleFormValues = z.infer<typeof updateArticleSchema>;
 

@@ -2,14 +2,14 @@ import { FormProvider } from "react-hook-form";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Input from "@/components/input";
-import { loginSchema } from "./lib/schemas";
-import { LoginFormValues } from "./lib/types";
+import { loginSchema } from "../../lib/auth/schemas";
+import { LoginFormValues } from "../../lib/auth/types";
 import FormErrorMessage from "@/components/form-error-message";
-import { useAuthentication } from "./lib/hooks/useAuthentication";
 import { GetServerSideProps } from "next";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuthentication } from "@/lib/auth/hooks/useAuthentication";
 
 export default function LoginPage() {
   const router = useRouter();

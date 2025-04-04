@@ -2,13 +2,13 @@ import { FormProvider } from "react-hook-form";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Input from "@/components/input";
-import { registerSchema } from "./lib/schemas";
-import { RegisterFormValues } from "./lib/types";
-import { useAuthentication } from "./lib/hooks/useAuthentication";
+import { registerSchema } from "../../lib/auth/schemas";
+import { RegisterFormValues } from "../../lib/auth/types";
 import FormErrorMessage from "@/components/form-error-message";
 import { GetServerSideProps } from "next";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
+import { useAuthentication } from "@/lib/auth/hooks/useAuthentication";
 
 export default function RegisterPage() {
   const router = useRouter();

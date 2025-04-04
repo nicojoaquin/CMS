@@ -1,4 +1,4 @@
-import { usePage } from "../../../lib/hooks/use-page";
+import { usePage } from "@/lib/hooks/use-page";
 
 type Props = {
   totalPages: number;

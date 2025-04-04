@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { loginSchema, registerSchema } from "../schemas";
+import { loginSchema, registerSchema } from "../../auth/schemas";
 import { z } from "zod";
 import { authClient } from "@/lib/auth/client";
 

@@ -8,11 +8,11 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { GetServerSideProps } from "next";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
-import ArticlesList from "./components/articles-list";
 import { usePage } from "@/lib/hooks/use-page";
-import Pagination from "./components/pagination";
 import { dehydrate, QueryClient } from "@tanstack/react-query";
 import { getUserArticles } from "@/lib/services/articles";
+import ArticlesList from "@/components/articles/articles-list";
+import Pagination from "@/components/articles/pagination";
 
 const PAGE_LIMIT = 10;
 
@@ -49,7 +49,7 @@ export default function DashboardPage() {
 
             <div className="w-full sm:w-auto flex justify-between sm:justify-end space-x-4">
               <Link
-                href="/dashboard/articles/new"
+                href="/dashboard/new"
                 className="bg-[#5D4037] hover:bg-[#4E342E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center whitespace-nowrap"
               >
                 <svg
@@ -84,7 +84,7 @@ export default function DashboardPage() {
                 You haven&apos;t created any articles yet.
               </p>
               <Link
-                href="/dashboard/articles/new"
+                href="/dashboard/new"
                 className="mt-4 inline-block bg-[#5D4037] hover:bg-[#4E342E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer"
               >
                 Create your first article
