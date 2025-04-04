@@ -1,17 +1,17 @@
 import React from "react";
 import Link from "next/link";
 
-export interface BreadcrumbItem {
+export type BreadcrumbItem = {
   label: string;
   href?: string;
-}
+};
 
-interface BreadcrumbsProps {
+type Props = {
   items: BreadcrumbItem[];
   className?: string;
-}
+};
 
-const Breadcrumbs: React.FC<BreadcrumbsProps> = ({ items, className = "" }) => {
+const Breadcrumbs = ({ items, className = "" }: Props) => {
   return (
     <nav className={`flex ${className}`} aria-label="Breadcrumb">
       <ol className="flex items-center space-x-1 text-sm">

@@ -1,10 +1,10 @@
 import toast from "react-hot-toast";
 
-export interface ApiError {
+export type ApiError = {
   message: string;
   code?: string;
   field?: string;
-}
+};
 
 export function isApiError(error: unknown): error is ApiError {
   return (

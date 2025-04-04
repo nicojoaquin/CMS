@@ -1,28 +1,23 @@
-import React from "react";
 import Link from "next/link";
 import {
+  articlesQueryKey,
   useUserArticles,
-  useDeleteArticle,
 } from "@/lib/services/articles/queries";
 import Header from "@/components/Header";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { GetServerSideProps } from "next";
 import { getServerSession } from "@/lib/auth/config";
 import { toWebHeaders } from "@/lib/api/utils";
-import { showErrorToast, showSuccessToast } from "@/lib/hooks/use-toast";
-import Image from "next/image";
-import { useRouter } from "next/router";
+import ArticlesList from "./components/articles-list";
+import { usePage } from "@/lib/hooks/use-page";
+import Pagination from "./components/pagination";
+import { dehydrate, QueryClient } from "@tanstack/react-query";
+import { getUserArticles } from "@/lib/services/articles";
+
+const PAGE_LIMIT = 3;
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const queryPage = router.query.page as string;
-  const currentPage =
-    queryPage && Number(queryPage) > 0 ? Number(queryPage) : 1;
-
-  const setCurrentPage = (page: number) => {
-    if (page < 1) return;
-    router.push(`/dashboard?page=${page}`);
-  };
+  const { currentPage } = usePage();
 
   const {
     data: articlesData,
@@ -30,37 +25,14 @@ export default function DashboardPage() {
     error,
   } = useUserArticles({
     page: currentPage,
-    limit: 3,
+    limit: PAGE_LIMIT,
   });
 
   const articles = articlesData?.articles || [];
   const totalPages = articlesData?.metadata.totalPages || 1;
 
-  const deleteArticleMutation = useDeleteArticle({
-    onSuccess: async () => {
-      showSuccessToast("Article deleted successfully!");
-      if (articles.length === 0 && currentPage > 1)
-        setCurrentPage(currentPage - 1);
-    },
-    onError: (error) => {
-      showErrorToast(error);
-    },
-  });
-
-  const handleDelete = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this article?")) {
-      deleteArticleMutation.mutate(id);
-    }
-  };
-
-  const handlePageChange = (page: number) => {
-    if (page !== currentPage) {
-      setCurrentPage(page);
-    }
-  };
-
   const breadcrumbItems = [{ label: "Dashboard" }];
-  const showLoading = isLoading || deleteArticleMutation.isPending;
+  const showLoading = isLoading;
 
   return (
     <div className="min-h-screen bg-[#F5F5F5]">
@@ -120,164 +92,8 @@ export default function DashboardPage() {
             </div>
           ) : (
             <>
-              <div className="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul className="divide-y divide-[#EFEBE9]">
-                  {articles.map((article) => (
-                    <li key={article.id} className="relative">
-                      <Link
-                        href={`/dashboard/articles/${article.id}`}
-                        className="block hover:bg-[#EFEBE9] transition-colors pr-20"
-                      >
-                        <div className="px-4 py-4 sm:px-6">
-                          <div className="flex">
-                            {article.coverImage ? (
-                              <div className="flex-shrink-0 mr-4">
-                                <Image
-                                  width={64}
-                                  height={64}
-                                  src={article.coverImage}
-                                  alt={article.title}
-                                  className="h-16 w-16 object-cover rounded-md"
-                                />
-                              </div>
-                            ) : (
-                              <div className="flex-shrink-0 mr-4">
-                                <div className="h-16 w-16 bg-[#EFEBE9] rounded-md flex items-center justify-center">
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-8 w-8 text-[#8D6E63]"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={1.5}
-                                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                    />
-                                  </svg>
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h3 className="text-lg font-medium text-[#5D4037] truncate">
-                                  {article.title}
-                                </h3>
-                                <div className="ml-2 flex-shrink-0 flex">
-                                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-[#EFEBE9] text-[#5D4037]">
-                                    {new Date(
-                                      article.createdAt
-                                    ).toLocaleDateString()}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="mt-2">
-                                <p className="text-sm text-[#6D4C41] line-clamp-2 font-medium">
-                                  {article.content.substring(0, 150)}
-                                  {article.content.length > 150 ? "..." : ""}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </Link>
-                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 flex space-x-2">
-                        <Link
-                          href={`/dashboard/articles/${article.id}/edit`}
-                          className="bg-[#EFEBE9] hover:bg-[#D7CCC8] text-[#5D4037] p-2 rounded-md transition-colors"
-                          title="Edit article"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                            />
-                          </svg>
-                        </Link>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleDelete(article.id);
-                          }}
-                          className="bg-[#FFEBEE] hover:bg-[#FFCDD2] text-[#C62828] p-2 rounded-md transition-colors cursor-pointer "
-                          title="Delete article"
-                          disabled={deleteArticleMutation.isPending}
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {totalPages > 1 && (
-                <div className="flex justify-center mt-6">
-                  <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-[#D7CCC8] bg-white text-sm font-medium ${
-                        currentPage === 1
-                          ? "text-[#BDBDBD] cursor-not-allowed"
-                          : "text-[#5D4037] hover:bg-[#EFEBE9] cursor-pointer"
-                      } transition-colors`}
-                    >
-                      Previous
-                    </button>
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <button
-                          key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`relative inline-flex items-center px-4 py-2 border ${
-                            page === currentPage
-                              ? "z-10 bg-[#EFEBE9] border-[#8D6E63] text-[#5D4037]"
-                              : "bg-white border-[#D7CCC8] text-[#5D4037] hover:bg-[#EFEBE9] cursor-pointer"
-                          } text-sm font-medium transition-colors`}
-                        >
-                          {page}
-                        </button>
-                      )
-                    )}
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-[#D7CCC8] bg-white text-sm font-medium ${
-                        currentPage === totalPages
-                          ? "text-[#BDBDBD] cursor-not-allowed"
-                          : "text-[#5D4037] hover:bg-[#EFEBE9] cursor-pointer"
-                      } transition-colors`}
-                    >
-                      Next
-                    </button>
-                  </nav>
-                </div>
-              )}
+              <ArticlesList articles={articles} />
+              {totalPages > 1 && <Pagination totalPages={totalPages} />}
             </>
           )}
         </div>
@@ -300,7 +116,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
   }
 
+  const queryClient = new QueryClient();
+  const page = parseInt(context.query.page as string) || 1;
+
+  await queryClient.prefetchQuery({
+    queryKey: articlesQueryKey(page),
+    queryFn: () => getUserArticles({ page, limit: PAGE_LIMIT }),
+  });
+
   return {
-    props: {},
+    props: {
+      dehydratedState: dehydrate(queryClient),
+    },
   };
 };

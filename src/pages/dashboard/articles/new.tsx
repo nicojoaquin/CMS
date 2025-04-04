@@ -26,7 +26,6 @@ type ArticleFormValues = z.infer<typeof createArticleSchema>;
 export default function NewArticlePage() {
   const router = useRouter();
 
-  // Use image upload hook
   const {
     selectedFile,
     imageResponse,
@@ -36,19 +35,16 @@ export default function NewArticlePage() {
     reset: resetImageUpload,
   } = useImageUpload();
 
-  // Initialize the mutation
   const createArticleMutation = useCreateArticle({
     onSuccess: () => {
       showSuccessToast("Article created successfully");
       resetImageUpload();
-      // Navigation is now done in the form submission handler
     },
     onError: (error: Error) => {
       showErrorToast(error);
     },
   });
 
-  // Define form
   const form = useForm<ArticleFormValues>({
     resolver: zodResolver(createArticleSchema),
     defaultValues: {
@@ -67,62 +63,45 @@ export default function NewArticlePage() {
     setValue,
   } = form;
 
-  // Reset form with the URL once we have the image response
   useEffect(() => {
     if (imageResponse?.url) {
       setValue("coverImage", imageResponse.url);
     }
   }, [imageResponse, setValue]);
 
-  // Ensure image is properly set when selectedFile exists
   useEffect(() => {
-    // If we have a preview file but no coverImage value, it's in an inconsistent state
     if (selectedFile && !form.getValues().coverImage) {
-      // Use existing response URL if available
       if (imageResponse?.url) {
         setValue("coverImage", imageResponse.url);
       } else {
-        // Mark that we have a file selected but not yet uploaded
         setValue("coverImage", "pendingUpload");
       }
     }
   }, [selectedFile, imageResponse, setValue, form]);
 
-  // Handler for when an image is selected
   const handleImageSelected = (file: File | null) => {
     handleFileSelected(file);
-    // Clear the coverImage value if the file is removed
+
     if (!file) {
       setValue("coverImage", "");
-    } else {
-      // If selecting a file, set the coverImage to a temporary value to pass validation
-      setValue("coverImage", imageResponse?.url || "pendingUpload");
+      return;
     }
+
+    setValue("coverImage", imageResponse?.url || "pendingUpload");
   };
 
-  // Add state for tracking form submission and image upload
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
-  // Form submission handler
   const onSubmit = handleSubmit(async (data) => {
     try {
-      // Set both isSubmitting and isUploading in proper states
       setIsSubmitting(true);
-
-      // If there's a selected file that hasn't been uploaded yet, upload it now
-      if (
-        selectedFile &&
-        (!data.coverImage || data.coverImage === "pendingUpload")
-      ) {
+      if (selectedFile) {
         try {
-          // Start the upload process here instead of waiting for it to complete earlier
           setIsUploadingImage(true);
           const uploadResponse = await uploadFile(selectedFile);
-          // Set the cover image URL
           data.coverImage = uploadResponse.url;
         } catch (error) {
-          // If upload fails, show error and stop submission
           showErrorToast(
             error instanceof Error ? error.message : "Image upload failed"
           );
@@ -134,12 +113,7 @@ export default function NewArticlePage() {
         }
       }
 
-      // Check if cover image is provided and not the temporary value
-      if (
-        !data.coverImage ||
-        data.coverImage === "pendingUpload" ||
-        data.coverImage.trim() === ""
-      ) {
+      if (!data.coverImage || data.coverImage.trim() === "") {
         setError("coverImage", {
           type: "manual",
           message: "Cover image is required",
@@ -148,7 +122,6 @@ export default function NewArticlePage() {
         return;
       }
 
-      // Create a properly typed request object
       const requestData: {
         title: string;
         content: string;
@@ -159,35 +132,26 @@ export default function NewArticlePage() {
         coverImage: data.coverImage,
       };
 
-      // Create the article
       await createArticleMutation.mutateAsync(requestData);
-      // Wait for any cache updates to complete
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      // Navigate to dashboard AFTER successful creation
       router.push("/dashboard");
     } catch (error) {
       if (isApiError(error) && error.field) {
-        // Set field-specific error
         setError(error.field as keyof ArticleFormValues, {
           type: "server",
           message: error.message,
         });
       } else {
-        // Show general error toast
         showErrorToast(error);
       }
       setIsSubmitting(false);
     }
   });
 
-  // Define breadcrumbs
   const breadcrumbItems = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "New Article" },
   ];
 
-  // Is loading if either mutation is pending, form is submitting, or image is uploading
   const isLoading =
     createArticleMutation.isPending || isSubmitting || isUploadingImage;
 

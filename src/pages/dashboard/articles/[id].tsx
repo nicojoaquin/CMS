@@ -1,30 +1,30 @@
-import React from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import {
+  articleQueryKey,
   useArticleById,
   useDeleteArticle,
 } from "@/lib/services/articles/queries";
 import Header from "@/components/Header";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { GetServerSideProps } from "next";
-import { getServerSession } from "@/lib/auth/config";
-import { toWebHeaders } from "@/lib/api/utils";
 import { showErrorToast, showSuccessToast } from "@/lib/hooks/use-toast";
 import { authClient } from "@/lib/auth/client";
+import { getArticleById } from "@/lib/services/articles";
+import { dehydrate, QueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import GetArticleError from "./components/get-article-error";
+import { getServerSession } from "@/lib/auth/config";
+import { toWebHeaders } from "@/lib/api/utils";
 
 export default function ArticleDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { data: session } = authClient.useSession();
-
-  // Use Tanstack Query to fetch the article
   const { data: article, isLoading, error } = useArticleById(id as string);
 
-  // Check if current user is the article owner
   const isOwner = article?.author?.id === session?.user?.id;
 
-  // Initialize the delete mutation
   const deleteArticleMutation = useDeleteArticle({
     onSuccess: () => {
       showSuccessToast("Article deleted successfully!");
@@ -35,16 +35,14 @@ export default function ArticleDetailPage() {
     },
   });
 
-  // Handle article deletion
   const handleDelete = () => {
     if (!isOwner) {
       showErrorToast("You don't have permission to delete this article");
       return;
     }
 
-    if (confirm("Are you sure you want to delete this article?")) {
+    if (confirm("Are you sure you want to delete this article?"))
       deleteArticleMutation.mutate(id as string);
-    }
   };
 
   if (isLoading) {
@@ -55,46 +53,9 @@ export default function ArticleDetailPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F5] flex flex-col justify-center items-center">
-        <div className="bg-[#FFEBEE] text-[#B71C1C] p-8 rounded-md shadow-md">
-          <h2 className="text-xl font-semibold mb-2">Error</h2>
-          <p className="font-medium">
-            {(error as Error).message || "Failed to load article"}
-          </p>
-          <Link
-            href="/dashboard"
-            className="mt-4 inline-block bg-[#5D4037] hover:bg-[#4E342E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  if (error) return <GetArticleError message={(error as Error).message} />;
+  if (!article) return <GetArticleError message="Article Not Found" />;
 
-  if (!article) {
-    return (
-      <div className="min-h-screen bg-[#F5F5F5] flex flex-col justify-center items-center">
-        <div className="bg-[#FFF8E1] text-[#F57F17] p-8 rounded-md shadow-md">
-          <h2 className="text-xl font-semibold mb-2">Article Not Found</h2>
-          <p className="font-medium">
-            The article you&apos;re looking for doesn&apos;t exist or has been
-            removed.
-          </p>
-          <Link
-            href="/dashboard"
-            className="mt-4 inline-block bg-[#5D4037] hover:bg-[#4E342E] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Define breadcrumbs
   const breadcrumbItems = [
     { label: "Dashboard", href: "/dashboard" },
     { label: article.title },
@@ -107,8 +68,6 @@ export default function ArticleDetailPage() {
       <div className="max-w-5xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <Breadcrumbs items={breadcrumbItems} className="mb-6" />
-
-          {/* Only show edit/delete buttons if user is the article owner */}
           {isOwner && (
             <div className="flex justify-end space-x-4 mb-6">
               <Link
@@ -130,7 +89,6 @@ export default function ArticleDetailPage() {
               </button>
             </div>
           )}
-
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <div className="p-6">
               <div className="flex justify-between items-start">
@@ -163,7 +121,9 @@ export default function ArticleDetailPage() {
 
               {article.coverImage && (
                 <div className="mb-6">
-                  <img
+                  <Image
+                    width={500}
+                    height={200}
                     src={article.coverImage}
                     alt={article.title}
                     className="w-full h-auto rounded-lg"
@@ -200,7 +160,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
   }
 
-  return {
-    props: {},
-  };
+  const queryClient = new QueryClient();
+  const id = context.params?.id as string;
+
+  try {
+    await queryClient.prefetchQuery({
+      queryKey: articleQueryKey(id),
+      queryFn: () => getArticleById(id),
+    });
+
+    return {
+      props: {
+        dehydratedState: dehydrate(queryClient),
+      },
+    };
+  } catch (error) {
+    return {
+      redirect: {
+        destination: "/dashboard",
+        permanent: false,
+      },
+    };
+  }
 };

@@ -1,23 +1,24 @@
 import React, { useState, useRef, ChangeEvent, useEffect } from "react";
 import { formatFileSize, isImageFile } from "@/lib/hooks/use-image-upload";
+import Image from "next/image";
 
-interface ImageUploadProps {
+type Props = {
   onImageSelected: (file: File | null) => void;
   currentImageUrl?: string;
   className?: string;
   isUploading?: boolean;
   errorMessage?: string;
   required?: boolean;
-}
+};
 
-const ImageUpload: React.FC<ImageUploadProps> = ({
+const ImageUpload = ({
   onImageSelected,
   currentImageUrl,
   className = "",
   isUploading = false,
   errorMessage,
   required = false,
-}) => {
+}: Props) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     currentImageUrl || null
   );
@@ -27,7 +28,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update preview URL when currentImageUrl changes
   useEffect(() => {
     if (currentImageUrl) {
       setPreviewUrl(currentImageUrl);
@@ -38,26 +38,20 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     const file = e.target.files?.[0];
 
     if (file) {
-      // Validate if the file is an image
       if (!isImageFile(file)) {
         alert("Please select a valid image file (JPG, PNG, GIF, etc.)");
-        if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-        }
+        if (fileInputRef.current) fileInputRef.current.value = "";
         return;
       }
 
-      // Create a preview immediately for better UX
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
 
-      // Store file information for display
       setFileInfo({
         name: file.name,
         size: file.size,
       });
 
-      // Pass the file to the parent component
       onImageSelected(file);
     }
   };
@@ -70,12 +64,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
     setPreviewUrl(null);
     setFileInfo(null);
     onImageSelected(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Determine if we're showing an existing image (vs. a newly selected file)
   const isExistingImage =
     previewUrl === currentImageUrl && currentImageUrl && !fileInfo;
 
@@ -93,63 +84,29 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
 
       {previewUrl ? (
         <div className="relative">
-          <img
+          <Image
+            width={500}
+            height={200}
             src={previewUrl}
             alt="Preview"
             className="w-full h-48 object-cover rounded-md"
           />
-
-          {/* Upload loading overlay */}
-          {isUploading && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex flex-col items-center justify-center rounded-md">
-              <div className="text-white mb-2">Uploading image...</div>
-              <div className="animate-pulse">
-                <svg
-                  className="w-8 h-8 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              </div>
-            </div>
-          )}
-
-          {/* File info display */}
           {fileInfo && !isUploading && (
             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 rounded-b-md">
               <div className="truncate">{fileInfo.name}</div>
               <div>{formatFileSize(fileInfo.size)}</div>
             </div>
           )}
-
-          {/* Image source label - show only for existing images */}
           {isExistingImage && !isUploading && (
             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-2 rounded-b-md">
               <div className="truncate">Current image</div>
             </div>
           )}
-
-          {/* Error message */}
           {errorMessage && (
             <div className="absolute bottom-0 left-0 right-0 bg-[#C62828] bg-opacity-90 text-white text-xs p-2 rounded-b-md">
               {errorMessage}
             </div>
           )}
-
           <button
             type="button"
             onClick={handleRemoveImage}
@@ -175,8 +132,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
               />
             </svg>
           </button>
-
-          {/* Change image button */}
           <button
             type="button"
             onClick={triggerFileInput}
@@ -215,14 +170,12 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
             />
           </svg>
           <p className="mt-2 text-sm text-[#5D4037] font-medium">
-            Click to upload an image{" "}
+            Click to upload an image
             {required && <span className="text-[#C62828]">*</span>}
           </p>
           <p className="mt-1 text-xs text-[#8D6E63]">
             JPG, PNG, GIF up to 10MB
           </p>
-
-          {/* Error message when no image */}
           {errorMessage && (
             <div className="mt-2 text-[#C62828] text-xs font-medium bg-[#FFEBEE] p-2 rounded">
               {errorMessage}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { authClient } from "@/lib/auth/client";
 
-export default function Header() {
+const Header = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const { data: session } = authClient.useSession();
@@ -11,16 +11,14 @@ export default function Header() {
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
+    if (searchQuery.trim())
+      router.push(
+        `/dashboard/search?q=${encodeURIComponent(searchQuery.trim())}`
+      );
   };
 
   const handleLogout = async () => {
-    // Sign out using the auth client
     await authClient.signOut();
-
-    // Navigate to login page
     router.push("/auth/login");
   };
 
@@ -97,4 +95,6 @@ export default function Header() {
       </div>
     </nav>
   );
-}
+};
+
+export default Header;

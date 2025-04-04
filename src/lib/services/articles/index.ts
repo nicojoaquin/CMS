@@ -1,20 +1,19 @@
 import { apiClient } from "../axios";
 import {
-  Article,
   CreateArticleRequest,
+  CreateArticleResponse,
+  GetArticleByIdResponse,
   GetArticlesResponse,
+  SearchArticlesResponse,
   UpdateArticleRequest,
+  UpdateArticleResponse,
 } from "./types";
 
 const ENDPOINT = "/articles";
 
-/**
- * Fetches articles with pagination
- */
 export async function getUserArticles(options?: {
   page?: number;
   limit?: number;
-  signal?: AbortSignal;
 }): Promise<GetArticlesResponse> {
   try {
     const { data } = await apiClient.get<GetArticlesResponse>(ENDPOINT, {
@@ -22,7 +21,6 @@ export async function getUserArticles(options?: {
         page: options?.page || 1,
         limit: options?.limit || 10,
       },
-      signal: options?.signal,
     });
     return data;
   } catch (error) {
@@ -31,32 +29,24 @@ export async function getUserArticles(options?: {
   }
 }
 
-/**
- * Fetches a single article by ID
- */
 export async function getArticleById(
-  id: string,
-  signal?: AbortSignal
-): Promise<Article> {
+  id: string
+): Promise<GetArticleByIdResponse> {
   try {
-    const { data } = await apiClient.get<Article>(`${ENDPOINT}/${id}`, {
-      signal,
-    });
+    const { data } = await apiClient.get<GetArticleByIdResponse>(
+      `${ENDPOINT}/${id}`
+    );
     return data;
   } catch (error) {
-    console.error(`Error fetching article ${id}:`, error);
     throw error;
   }
 }
 
-/**
- * Creates a new article
- */
 export async function createArticle(
   dto: CreateArticleRequest
-): Promise<Article> {
+): Promise<CreateArticleResponse> {
   try {
-    const { data } = await apiClient.post<Article>(ENDPOINT, dto);
+    const { data } = await apiClient.post<CreateArticleResponse>(ENDPOINT, dto);
     return data;
   } catch (error) {
     console.error("Error creating article:", error);
@@ -64,17 +54,12 @@ export async function createArticle(
   }
 }
 
-/**
- * Searches for articles by query term
- */
 export async function searchArticles(
-  query: string,
-  signal?: AbortSignal
-): Promise<Article[]> {
+  query: string
+): Promise<SearchArticlesResponse> {
   try {
-    const { data } = await apiClient.get<Article[]>("/search", {
+    const { data } = await apiClient.get<SearchArticlesResponse>("/search", {
       params: { q: query },
-      signal,
     });
     return data;
   } catch (error) {
@@ -83,15 +68,15 @@ export async function searchArticles(
   }
 }
 
-/**
- * Updates an existing article
- */
 export async function updateArticle(
   id: string,
   dto: UpdateArticleRequest
-): Promise<Article> {
+): Promise<UpdateArticleResponse> {
   try {
-    const { data } = await apiClient.put<Article>(`${ENDPOINT}/${id}`, dto);
+    const { data } = await apiClient.put<UpdateArticleResponse>(
+      `${ENDPOINT}/${id}`,
+      dto
+    );
     return data;
   } catch (error) {
     console.error(`Error updating article ${id}:`, error);
@@ -99,9 +84,6 @@ export async function updateArticle(
   }
 }
 
-/**
- * Deletes an article by ID
- */
 export async function deleteArticle(id: string): Promise<void> {
   try {
     await apiClient.delete(`${ENDPOINT}/${id}`);
