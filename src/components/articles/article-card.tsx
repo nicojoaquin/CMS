@@ -1,10 +1,10 @@
-import { Article } from "@/lib/services/articles/types";
+import { Article, SearchArticleItem } from "@/lib/services/articles/types";
 import Image from "next/image";
 import Link from "next/link";
 import DeleteArticle from "./delete-article";
 import { authClient } from "@/lib/auth/client";
 
-type Props = Article;
+type Props = SearchArticleItem | Article;
 
 const ArticleCard = (article: Props) => {
   const { data } = authClient.useSession();

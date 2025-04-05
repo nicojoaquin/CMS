@@ -37,7 +37,6 @@ export default async function handler(
 
   if (req.method === "GET") {
     try {
-      // Find the article
       const article = await db
         .collection<ArticleDocument>("article")
         .aggregate<PopulatedArticleDocument>([
@@ -79,7 +78,6 @@ export default async function handler(
     }
   }
 
-  // PUT - Update an article
   if (req.method === "PUT" || req.method === "PATCH") {
     try {
       const existingArticle = await db
@@ -90,14 +88,12 @@ export default async function handler(
         return res.status(404).json({ message: "Article not found" });
       }
 
-      // Verify ownership
       if (!existingArticle.author.equals(new ObjectId(session.user.id))) {
         return res.status(403).json({
           message: "You don't have permission to update this article",
         });
       }
 
-      // Validate request body
       const validatedData = updateArticleSchema.parse(req.body);
 
       const result = await db.collection<ArticleDocument>("article").updateOne(
@@ -162,14 +158,12 @@ export default async function handler(
         return res.status(404).json({ message: "Article not found" });
       }
 
-      // Verify ownership
       if (!existingArticle.author.equals(new ObjectId(session.user.id))) {
         return res.status(403).json({
           message: "You don't have permission to delete this article",
         });
       }
 
-      // Delete the article
       const result = await db
         .collection<ArticleDocument>("article")
         .deleteOne({ _id: articleId });
